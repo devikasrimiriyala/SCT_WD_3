@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Programming Quiz Game</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins', sans-serif;
+}
+
+body{
+    background:linear-gradient(135deg,#4facfe,#00f2fe,#43e97b);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.quiz-container{
+    background:rgba(255,255,255,0.15);
+    backdrop-filter:blur(12px);
+    width:100%;
+    max-width:700px;
+    height:600px;
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    border:1px solid rgba(255,255,255,0.3);
+    color:white;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    color:blue;
+    font-size:32px;
+}
+
+.progress{
+    margin-bottom:20px;
+    font-weight:bold;
+    color:#f0f0f0;
+}
+
+.question{
+    font-size:24px;
+    font-weight:bold;
+    margin-bottom:20px;
+    color:rgb(243, 255, 192);
+    min-height:70px;
+}
+
+.options{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+    min-height:220px;
+}
+
+.option{
+    background:rgba(255,255,255,0.2);
+    padding:14px;
+    border-radius:10px;
+    transition:0.3s;
+    border:2px solid transparent;
+    color:rgb(255, 255, 255);
+    font-size:17px;
+}
+
+.option:hover{
+    background:rgba(255,255,255,0.35);
+    border-color:rgb(255, 255, 255);
+    transform:scale(1.02);
+}
+
+.fill-input{
+    width:100%;
+    padding:14px;
+    font-size:16px;
+    border:none;
+    border-radius:10px;
+    outline:none;
+}
+
+.button-group{
+    display:flex;
+    gap:15px;
+    margin-top:25px;
+}
+
+.btn{
+    flex:1;
+    padding:12px;
+    border:none;
+    background:linear-gradient(135deg,#ff512f,#dd2476);
+    color:white;
+    font-size:18px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:0.3s;
+    font-weight:bold;
+}
+
+.btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 5px 15px rgba(0,0,0,0.3);
+}
+
+.result{
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    height:100%;
+}
+
+.score{
+    font-size:34px;
+    color:#fff;
+    margin:20px 0;
+    font-weight:bold;
+}
+
+.hidden{
+    display:none;
+}
+
+/* Small Restart Button */
+
+.result .btn{
+    width:180px;
+    padding:10px;
+    font-size:16px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="quiz-container">
+
+    <div id="quiz-box">
+
+        <h1>Programming Quiz Game</h1>
+
+        <div class="progress" id="progress"></div>
+
+        <div class="question" id="question"></div>
+
+        <div class="options" id="options"></div>
+
+        <div class="button-group">
+            <button class="btn" id="prevBtn">Previous</button>
+            <button class="btn" id="nextBtn">Next</button>
+        </div>
+
+    </div>
+
+    <div id="result-box" class="result hidden">
+
+        <h2>Quiz Completed 🎉</h2>
+
+        <div class="score" id="score"></div>
+
+        <button class="btn" onclick="restartQuiz()">Restart Quiz</button>
+
+    </div>
+
+</div>
+
+<script>
+
+const quizData = [
+
+{
+    type: "single",
+    question: "Which programming language is used for styling web pages?",
+    options: ["HTML", "CSS", "Python", "C++"],
+    answer: "CSS"
+},
+
+{
+    type: "multi",
+    question: "Select all programming languages.",
+    options: ["Java", "Python", "HTML", "C"],
+    answer: ["Java", "Python", "C"]
+},
+
+{
+    type: "fill",
+    question: "Fill in the blank: HTML stands for Hyper Text Markup ______.",
+    answer: "Language"
+},
+
+{
+    type: "single",
+    question: "Which symbol is used for single-line comments in JavaScript?",
+    options: ["//", "##", "<!-- -->", "**"],
+    answer: "//"
+},
+
+{
+    type: "multi",
+    question: "Which of the following are front-end technologies?",
+    options: ["HTML", "CSS", "JavaScript", "MySQL"],
+    answer: ["HTML", "CSS", "JavaScript"]
+},
+
+{
+    type: "fill",
+    question: "Fill in the blank: CSS is used to design and ______ web pages.",
+    answer: "Style"
+}
+
+];
+
+let currentQuestion = 0;
+let score = 0;
+
+const userAnswers = new Array(quizData.length).fill(null);
+
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const nextBtn = document.getElementById("nextBtn");
+const prevBtn = document.getElementById("prevBtn");
+const resultBox = document.getElementById("result-box");
+const quizBox = document.getElementById("quiz-box");
+const scoreEl = document.getElementById("score");
+const progressEl = document.getElementById("progress");
+
+function loadQuestion(){
+
+    let q = quizData[currentQuestion];
+
+    progressEl.innerText = `Question ${currentQuestion + 1} of ${quizData.length}`;
+
+    questionEl.innerText = q.question;
+
+    optionsEl.innerHTML = "";
+
+    if(q.type === "single"){
+
+        q.options.forEach(option => {
+
+            const div = document.createElement("div");
+
+            div.classList.add("option");
+
+            div.innerHTML = `
+                <label>
+                    <input type="radio" name="answer" value="${option}">
+                    ${option}
+                </label>
+            `;
+
+            optionsEl.appendChild(div);
+        });
+    }
+
+    else if(q.type === "multi"){
+
+        q.options.forEach(option => {
+
+            const div = document.createElement("div");
+
+            div.classList.add("option");
+
+            div.innerHTML = `
+                <label>
+                    <input type="checkbox" value="${option}">
+                    ${option}
+                </label>
+            `;
+
+            optionsEl.appendChild(div);
+        });
+    }
+
+    else if(q.type === "fill"){
+
+        const input = document.createElement("input");
+
+        input.type = "text";
+
+        input.id = "fillAnswer";
+
+        input.placeholder = "Enter your answer";
+
+        input.classList.add("fill-input");
+
+        optionsEl.appendChild(input);
+    }
+
+    loadPreviousAnswer();
+
+    prevBtn.style.display = currentQuestion === 0 ? "none" : "block";
+
+    nextBtn.innerText = currentQuestion === quizData.length - 1 ? "Submit" : "Next";
+}
+
+function saveAnswer(){
+
+    let q = quizData[currentQuestion];
+
+    if(q.type === "single"){
+
+        let selected = document.querySelector('input[name="answer"]:checked');
+
+        userAnswers[currentQuestion] = selected ? selected.value : null;
+    }
+
+    else if(q.type === "multi"){
+
+        let selectedOptions = document.querySelectorAll('input[type="checkbox"]:checked');
+
+        let answers = [];
+
+        selectedOptions.forEach(option => {
+
+            answers.push(option.value);
+
+        });
+
+        userAnswers[currentQuestion] = answers;
+    }
+
+    else if(q.type === "fill"){
+
+        let answer = document.getElementById("fillAnswer").value;
+
+        userAnswers[currentQuestion] = answer;
+    }
+}
+
+function loadPreviousAnswer(){
+
+    let savedAnswer = userAnswers[currentQuestion];
+
+    if(savedAnswer === null) return;
+
+    let q = quizData[currentQuestion];
+
+    if(q.type === "single"){
+
+        let radios = document.querySelectorAll('input[name="answer"]');
+
+        radios.forEach(radio => {
+
+            if(radio.value === savedAnswer){
+
+                radio.checked = true;
+            }
+
+        });
+    }
+
+    else if(q.type === "multi"){
+
+        let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+        checkboxes.forEach(box => {
+
+            if(savedAnswer.includes(box.value)){
+
+                box.checked = true;
+            }
+
+        });
+    }
+
+    else if(q.type === "fill"){
+
+        document.getElementById("fillAnswer").value = savedAnswer;
+    }
+}
+
+function calculateScore(){
+
+    score = 0;
+
+    quizData.forEach((q, index) => {
+
+        let userAnswer = userAnswers[index];
+
+        if(q.type === "single"){
+
+            if(userAnswer === q.answer){
+
+                score++;
+            }
+        }
+
+        else if(q.type === "multi"){
+
+            if(userAnswer){
+
+                let correct = [...q.answer].sort();
+
+                let user = [...userAnswer].sort();
+
+                if(JSON.stringify(correct) === JSON.stringify(user)){
+
+                    score++;
+                }
+            }
+        }
+
+        else if(q.type === "fill"){
+
+            if(userAnswer &&
+               userAnswer.toLowerCase() === q.answer.toLowerCase()){
+
+                score++;
+            }
+        }
+
+    });
+}
+
+nextBtn.addEventListener("click", () => {
+
+    saveAnswer();
+
+    if(currentQuestion < quizData.length - 1){
+
+        currentQuestion++;
+
+        loadQuestion();
+    }
+
+    else{
+
+        calculateScore();
+
+        showResult();
+    }
+
+});
+
+prevBtn.addEventListener("click", () => {
+
+    saveAnswer();
+
+    currentQuestion--;
+
+    loadQuestion();
+
+});
+
+function showResult(){
+
+    quizBox.classList.add("hidden");
+
+    resultBox.classList.remove("hidden");
+
+    scoreEl.innerHTML = `Your Score: ${score} / ${quizData.length}`;
+}
+
+function restartQuiz(){
+
+    currentQuestion = 0;
+
+    score = 0;
+
+    for(let i = 0; i < userAnswers.length; i++){
+
+        userAnswers[i] = null;
+    }
+
+    resultBox.classList.add("hidden");
+
+    quizBox.classList.remove("hidden");
+
+    loadQuestion();
+}
+
+loadQuestion();
+
+</script>
+
+</body>
+</html>
